@@ -10,10 +10,15 @@ export default function Header({ imageLoaded, filename }: HeaderProps) {
   const [apiStatus, setApiStatus] = useState<'checking' | 'online' | 'offline'>('checking');
   const [currentTime, setCurrentTime] = useState(new Date());
 
+  const [providerInfo, setProviderInfo] = useState('');
+
   useEffect(() => {
     fetch('/api/health')
       .then(r => r.json())
-      .then(d => setApiStatus(d.ollama_reachable ? 'online' : 'offline'))
+      .then(d => {
+        setApiStatus(d.status === 'healthy' ? 'online' : 'offline');
+        setProviderInfo(d.provider ? `${d.provider.toUpperCase()} — ${d.model || ''}` : '');
+      })
       .catch(() => setApiStatus('offline'));
   }, []);
 
@@ -59,7 +64,7 @@ export default function Header({ imageLoaded, filename }: HeaderProps) {
           {apiStatus === 'checking'
             ? 'CONNECTING...'
             : apiStatus === 'online'
-            ? 'MEDGEMMA READY'
+            ? (providerInfo || 'MEDGEMMA READY')
             : 'MODEL SETUP NEEDED'}
         </span>
       </div>

@@ -31,20 +31,29 @@ const TYPE_FILL_OPACITY: Record<Annotation['type'], number> = {
 
 /* ── Single annotation box (corner-bracket style) ────── */
 function AnnotationBox({ ann, isManual, onRemove }: { ann: Annotation; isManual?: boolean; onRemove?: () => void }) {
-  const [y1, x1, y2, x2] = ann.box_2d;
-  const w = x2 - x1;
-  const h = y2 - y1;
+  // Clamp coordinates to valid 0-1000 range
+  const clamp = (v: number) => Math.max(0, Math.min(1000, v));
+  const x1 = clamp(ann.box_2d[1]);
+  const y1 = clamp(ann.box_2d[0]);
+  const x2 = clamp(ann.box_2d[3]);
+  const y2 = clamp(ann.box_2d[2]);
+  const w = Math.max(x2 - x1, 1);
+  const h = Math.max(y2 - y1, 1);
 
   const color        = TYPE_COLOR[ann.type] ?? '#00d4ff';
   const fillOpacity  = TYPE_FILL_OPACITY[ann.type] ?? 0.07;
   const bracketLen   = Math.max(14, Math.min(w, h) * 0.2);
 
-  // Label sits above the box when there's room, otherwise below
-  const LABEL_H   = 17;
+  // Label sizing — accommodate longer disease names
+  const LABEL_H   = 18;
   const rawLabel  = ann.label.toUpperCase();
-  const labelW    = Math.min(rawLabel.length, 28) * 6.2 + 12;
-  const labelY    = y1 >= LABEL_H + 4 ? y1 - LABEL_H - 2 : y2 + 2;
-  const labelText = rawLabel.length > 28 ? rawLabel.slice(0, 25) + '...' : rawLabel;
+  const labelText = rawLabel.length > 36 ? rawLabel.slice(0, 33) + '...' : rawLabel;
+  const labelW    = Math.min(labelText.length * 6.2 + 14, w + 80);
+
+  // Label position: above box if room, otherwise below; clamped to viewBox
+  let labelY = y1 >= LABEL_H + 4 ? y1 - LABEL_H - 2 : y2 + 2;
+  labelY = Math.max(0, Math.min(1000 - LABEL_H, labelY));
+  const labelX = Math.max(0, Math.min(1000 - labelW, x1));
 
   return (
     <g>
@@ -65,10 +74,10 @@ function AnnotationBox({ ann, isManual, onRemove }: { ann: Annotation; isManual?
             fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
 
       {/* Label badge */}
-      <rect x={x1} y={labelY} width={labelW} height={LABEL_H} fill={color} rx="2" opacity="0.93" />
+      <rect x={labelX} y={labelY} width={labelW} height={LABEL_H} fill={color} rx="2" opacity="0.93" />
       <text
-        x={x1 + 5}
-        y={labelY + LABEL_H - 4}
+        x={labelX + 6}
+        y={labelY + LABEL_H - 4.5}
         fill="#fff"
         fontSize="10"
         fontFamily="'JetBrains Mono', monospace"
@@ -99,10 +108,7 @@ function AnnotationBox({ ann, isManual, onRemove }: { ann: Annotation; isManual?
   );
 }
 
-/* ── Bottom-left legend ──────────────────────────────── */
-const LEGEND_TYPES = [
-  { type: 'pathology', label: 'Defective Area' },
-] as const;
+/* ── Bottom-left legend — built dynamically from annotations ── */
 
 /* ── Main component ─────────────────────────────────── */
 export default function XRayViewer({
@@ -234,9 +240,11 @@ export default function XRayViewer({
     filters.invert ? 'invert(1)' : '',
   ].filter(Boolean).join(' ');
 
-  const visibleTypes = LEGEND_TYPES.filter(({ type }) =>
-    annotations.some(a => a.type === type)
-  );
+  // Build legend entries from actual annotation labels (disease names)
+  const allAnnotations = [...annotations, ...manualAnnotations];
+  const legendEntries = Array.from(
+    new Map(allAnnotations.map(a => [a.label, a.type])).entries()
+  ).map(([label, type]) => ({ label, type: type as Annotation['type'] }));
 
   return (
     <div
@@ -269,7 +277,7 @@ export default function XRayViewer({
           />
 
           {/* SVG annotation overlay — single consolidated SVG */}
-          {showAnnotations && (annotations.length > 0 || manualAnnotations.length > 0) && rendered && (
+          {(showAnnotations || isDrawing) && rendered && (
             <svg
               ref={svgRef}
               className={`absolute transition-cursor duration-150`}
@@ -331,11 +339,11 @@ export default function XRayViewer({
           </div>
 
           {/* Annotation legend */}
-          {showAnnotations && visibleTypes.length > 0 && (
-            <div className="absolute bottom-4 left-4 flex flex-col gap-1.5 rounded-lg px-3 py-2.5 bg-[rgba(8,8,16,0.82)] border border-[#1e2040] backdrop-blur-sm">
-              <p className="text-[9px] font-mono text-[#4a5568] uppercase tracking-[2px] mb-0.5">Legend</p>
-              {visibleTypes.map(({ type, label }) => (
-                <div key={type} className="flex items-center gap-2">
+          {showAnnotations && legendEntries.length > 0 && (
+            <div className="absolute bottom-4 left-4 flex flex-col gap-1.5 rounded-lg px-3 py-2.5 bg-[rgba(8,8,16,0.82)] border border-[#1e2040] backdrop-blur-sm max-h-[200px] overflow-y-auto">
+              <p className="text-[9px] font-mono text-[#4a5568] uppercase tracking-[2px] mb-0.5">Findings</p>
+              {legendEntries.map(({ type, label }) => (
+                <div key={label} className="flex items-center gap-2">
                   <div
                     className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
                     style={{ background: TYPE_COLOR[type] }}

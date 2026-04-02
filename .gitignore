@@ -28,6 +28,7 @@ __pycache__/
 venv/
 ENV/
 env/
+med-env/
 
 # VS Code
 .vscode/
@@ -35,6 +36,7 @@ env/
 
 # macOS
 .DS_Store
+.claude/
 
 # Misc
 *.log
