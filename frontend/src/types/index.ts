@@ -35,3 +35,8 @@ export interface Annotation {
   box_2d: [number, number, number, number]; // [y_min, x_min, y_max, x_max] in 0–1000
   type: 'anatomy' | 'pathology' | 'device';
 }
+
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}

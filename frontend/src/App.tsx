@@ -7,6 +7,7 @@ import { UploadedImage, AnalysisTool, ImageFilters } from './types';
 import { useAnalysis } from './hooks/useAnalysis';
 import { useAnnotations } from './hooks/useAnnotations';
 import { useManualAnnotations } from './hooks/useManualAnnotations';
+import { useChat } from './hooks/useChat';
 import { Play, Loader2, ZoomIn, ZoomOut, Maximize2, Sun, FolderOpen, Tag, Eye, EyeOff, Pen } from 'lucide-react';
 
 const TOOL_LABELS: Record<AnalysisTool, string> = {
@@ -39,6 +40,7 @@ export default function App() {
   const { isAnalyzing, streamedText, isComplete, error, startAnalysis, reset } = useAnalysis();
   const { annotations, isLoading: isLabeling, fetchAnnotations, clearAnnotations } = useAnnotations();
   const { manualAnnotations, addAnnotation, removeAnnotation, clearManualAnnotations } = useManualAnnotations();
+  const { messages: chatMessages, isStreaming: isChatStreaming, sendMessage: sendChat, clearChat } = useChat();
 
   const handleFile = useCallback(async (file: File) => {
     setUploading(true);
@@ -76,8 +78,9 @@ export default function App() {
     reset();
     clearAnnotations();
     clearManualAnnotations();
+    clearChat();
     setFilters({ brightness: 100, contrast: 100, invert: false, zoom: 100 });
-  }, [image, reset, clearAnnotations, clearManualAnnotations]);
+  }, [image, reset, clearAnnotations, clearManualAnnotations, clearChat]);
 
   const handleAutoLabel = useCallback(() => {
     if (image && !isLabeling) fetchAnnotations(image);
@@ -231,6 +234,12 @@ export default function App() {
           isComplete={isComplete}
           streamedText={streamedText}
           error={error}
+          chatMessages={chatMessages}
+          isChatStreaming={isChatStreaming}
+          onSendChat={(msg) => {
+            if (image) sendChat(msg, image.image_data, image.mime_type, streamedText);
+          }}
+          onClearChat={clearChat}
         />
       </div>
 

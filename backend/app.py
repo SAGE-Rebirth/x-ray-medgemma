@@ -620,5 +620,162 @@ def _position_to_box(position_str):
     return [y_min, x_min, y_max, x_max]
 
 
+CHAT_SYSTEM_PROMPT = """You are Dr. MedGemma, a board-certified radiologist with 20 years of experience. You previously generated a detailed radiology report for a medical image. The user is now asking follow-up questions about that report.
+
+You have access to both the original medical image and your report. Answer questions accurately, referencing specific findings from the report when relevant. You can:
+- Explain medical terminology in simpler terms
+- Provide more detail on specific findings
+- Discuss clinical significance and implications
+- Suggest additional considerations
+- Clarify differential diagnoses
+
+Be concise but thorough. Use proper radiological terminology with explanations when needed.
+
+**DISCLAIMER**: This AI analysis is for educational purposes only and must be correlated with clinical findings by a licensed physician. Not for diagnostic use."""
+
+
+@app.route('/api/chat', methods=['POST'])
+def chat_with_report():
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+
+    image_data = data.get('image_data')
+    mime_type = data.get('mime_type', 'image/jpeg')
+    report = data.get('report', '')
+    messages = data.get('messages', [])
+
+    if not image_data or not messages:
+        return jsonify({"error": "Image data and messages are required"}), 400
+
+    def generate():
+        try:
+            provider = _resolve_provider()
+
+            if provider == "gemini":
+                try:
+                    yielded = False
+                    for chunk in _gemini_chat_multiturn(
+                        CHAT_SYSTEM_PROMPT, report, messages, image_data, mime_type
+                    ):
+                        yielded = True
+                        yield f"data: {json.dumps({'text': chunk, 'done': False})}\n\n"
+                    if yielded:
+                        yield f"data: {json.dumps({'text': '', 'done': True})}\n\n"
+                        return
+                except Exception:
+                    pass
+
+            # Ollama fallback
+            for chunk in _ollama_chat_multiturn(
+                CHAT_SYSTEM_PROMPT, report, messages, image_data, mime_type
+            ):
+                yield f"data: {json.dumps({'text': chunk, 'done': False})}\n\n"
+            yield f"data: {json.dumps({'text': '', 'done': True})}\n\n"
+
+        except urllib.error.URLError as e:
+            yield f"data: {json.dumps({'error': f'Cannot reach AI provider. Error: {e.reason}', 'done': True})}\n\n"
+        except Exception as e:
+            yield f"data: {json.dumps({'error': str(e), 'done': True})}\n\n"
+
+    return _sse_response(generate())
+
+
+def _gemini_chat_multiturn(system_text, report, messages, image_b64, mime_type):
+    """Multi-turn chat with Gemini, including image and report context."""
+    contents = []
+
+    # First turn: image + report context
+    contents.append({
+        "role": "user",
+        "parts": [
+            {"inline_data": {"mime_type": mime_type, "data": image_b64}},
+            {"text": f"Here is the radiology report I generated for this image:\n\n{report}"},
+        ],
+    })
+    contents.append({
+        "role": "model",
+        "parts": [{"text": "I have reviewed the image and the report. Feel free to ask any questions about the findings."}],
+    })
+
+    # Append conversation history
+    for msg in messages:
+        role = "model" if msg["role"] == "assistant" else "user"
+        contents.append({"role": role, "parts": [{"text": msg["content"]}]})
+
+    payload = {
+        "contents": contents,
+        "generationConfig": {"maxOutputTokens": 2048, "temperature": 0.3},
+    }
+    if system_text:
+        payload["systemInstruction"] = {"parts": [{"text": system_text}]}
+
+    data = json.dumps(payload).encode("utf-8")
+    url = f"{GEMINI_BASE}/models/{GEMINI_MODEL}:streamGenerateContent?alt=sse&key={GEMINI_API_KEY}"
+    req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"}, method="POST")
+
+    with urllib.request.urlopen(req, timeout=300) as resp:
+        for raw_line in resp:
+            line = raw_line.decode("utf-8").strip()
+            if not line.startswith("data: "):
+                continue
+            try:
+                chunk = json.loads(line[6:])
+            except json.JSONDecodeError:
+                continue
+            for candidate in chunk.get("candidates", []):
+                for part in candidate.get("content", {}).get("parts", []):
+                    text = part.get("text", "")
+                    if text:
+                        yield text
+
+
+def _ollama_chat_multiturn(system_text, report, messages, image_b64, mime_type):
+    """Multi-turn chat with Ollama, including image and report context."""
+    ollama_messages = []
+    if system_text:
+        ollama_messages.append({"role": "system", "content": system_text})
+
+    # First turn: image + report
+    ollama_messages.append({
+        "role": "user",
+        "content": f"Here is the radiology report I generated for this image:\n\n{report}",
+        "images": [image_b64],
+    })
+    ollama_messages.append({
+        "role": "assistant",
+        "content": "I have reviewed the image and the report. Feel free to ask any questions about the findings.",
+    })
+
+    # Append conversation history
+    for msg in messages:
+        ollama_messages.append({"role": msg["role"], "content": msg["content"]})
+
+    payload = json.dumps({
+        "model": OLLAMA_MODEL,
+        "messages": ollama_messages,
+        "stream": True,
+        "options": {"num_predict": 2048, "temperature": 0.3},
+    }).encode("utf-8")
+
+    req = urllib.request.Request(
+        f"{OLLAMA_BASE}/api/chat",
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+
+    with urllib.request.urlopen(req, timeout=300) as resp:
+        for line in resp:
+            if not line.strip():
+                continue
+            chunk = json.loads(line)
+            text = chunk.get("message", {}).get("content", "")
+            if text:
+                yield text
+            if chunk.get("done", False):
+                break
+
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000, threaded=True)
