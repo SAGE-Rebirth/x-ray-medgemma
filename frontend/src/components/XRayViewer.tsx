@@ -131,19 +131,20 @@ export default function XRayViewer({
     if (w && h) setRendered({ w, h });
   }, []);
 
-  /** Convert mouse event coordinates to SVG viewport coordinates (0-1000) */
-  const getViewBoxCoords = useCallback((e: React.MouseEvent<SVGSVGElement>): { x: number; y: number } | null => {
+  /** Convert client x/y to SVG viewport coordinates (0-1000) */
+  const clientToViewBox = useCallback((clientX: number, clientY: number): { x: number; y: number } | null => {
     if (!svgRef.current) return null;
     const rect = svgRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    // Map to viewBox coordinates (0-1000)
-    const viewBoxX = (x / rect.width) * 1000;
-    const viewBoxY = (y / rect.height) * 1000;
-    
-    return { x: viewBoxX, y: viewBoxY };
+    return {
+      x: ((clientX - rect.left) / rect.width)  * 1000,
+      y: ((clientY - rect.top)  / rect.height) * 1000,
+    };
   }, []);
+
+  /** Convert mouse event coordinates to SVG viewport coordinates (0-1000) */
+  const getViewBoxCoords = useCallback((e: React.MouseEvent<SVGSVGElement>): { x: number; y: number } | null => {
+    return clientToViewBox(e.clientX, e.clientY);
+  }, [clientToViewBox]);
 
   const handleSvgMouseDown = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
     if (!isDrawing || !rendered) return;
@@ -193,6 +194,57 @@ export default function XRayViewer({
       setShowLabelDialog(true);
     }
     
+    setDrawing(false);
+    setStartPos(null);
+    setCurrentRect(null);
+  }, [drawing, currentRect]);
+
+  /* ── Touch handlers for mobile drawing ─────────────────── */
+  const handleSvgTouchStart = useCallback((e: React.TouchEvent<SVGSVGElement>) => {
+    if (!isDrawing || !rendered || e.touches.length !== 1) return;
+    e.preventDefault();
+    const t = e.touches[0];
+    const coords = clientToViewBox(t.clientX, t.clientY);
+    if (!coords) return;
+    setDrawing(true);
+    setStartPos(coords);
+    setCurrentRect(null);
+  }, [isDrawing, rendered, clientToViewBox]);
+
+  const handleSvgTouchMove = useCallback((e: React.TouchEvent<SVGSVGElement>) => {
+    if (!drawing || !startPos || !rendered || e.touches.length !== 1) return;
+    e.preventDefault();
+    const t = e.touches[0];
+    const coords = clientToViewBox(t.clientX, t.clientY);
+    if (!coords) return;
+    const w = coords.x - startPos.x;
+    const h = coords.y - startPos.y;
+    setCurrentRect({
+      x: w >= 0 ? startPos.x : coords.x,
+      y: h >= 0 ? startPos.y : coords.y,
+      w: Math.abs(w),
+      h: Math.abs(h),
+    });
+  }, [drawing, startPos, rendered, clientToViewBox]);
+
+  const handleSvgTouchEnd = useCallback((e: React.TouchEvent<SVGSVGElement>) => {
+    e.preventDefault();
+    if (!drawing || !currentRect) {
+      setDrawing(false);
+      setStartPos(null);
+      setCurrentRect(null);
+      return;
+    }
+    if (currentRect.w > 20 && currentRect.h > 20) {
+      const box: [number, number, number, number] = [
+        Math.round(currentRect.y),
+        Math.round(currentRect.x),
+        Math.round(currentRect.y + currentRect.h),
+        Math.round(currentRect.x + currentRect.w),
+      ];
+      setPendingBox(box);
+      setShowLabelDialog(true);
+    }
     setDrawing(false);
     setStartPos(null);
     setCurrentRect(null);
@@ -298,6 +350,9 @@ export default function XRayViewer({
               onMouseMove={handleSvgMouseMove}
               onMouseUp={handleSvgMouseUp}
               onMouseLeave={handleSvgMouseUp}
+              onTouchStart={handleSvgTouchStart}
+              onTouchMove={handleSvgTouchMove}
+              onTouchEnd={handleSvgTouchEnd}
             >
               {/* Auto-labeled annotations */}
               {annotations.map((ann, i) => (

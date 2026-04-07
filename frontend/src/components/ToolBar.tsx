@@ -25,7 +25,7 @@ export default function ToolBar({
   selectedTool, onSelectTool, filters, onFilterChange, image, onOpenFile, onClear,
 }: ToolBarProps) {
   return (
-    <aside className="w-[220px] flex-shrink-0 bg-[#0c0c1a] border-r border-[#1e2040] flex flex-col overflow-y-auto">
+    <aside className="hidden lg:flex w-[220px] flex-shrink-0 bg-[#0c0c1a] border-r border-[#1e2040] flex-col overflow-y-auto">
       {/* Analysis Tools */}
       <div className="p-4 border-b border-[#1e2040]">
         <p className="text-[10px] font-mono text-[#4a5568] uppercase tracking-[2px] mb-3">Analysis Tools</p>

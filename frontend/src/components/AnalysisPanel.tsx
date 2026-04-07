@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FileText, AlertCircle, Send, MessageSquare, Trash2 } from 'lucide-react';
+import { FileText, AlertCircle, Send, MessageSquare, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { UploadedImage, ChatMessage } from '../types';
 
 interface AnalysisPanelProps {
@@ -12,6 +12,8 @@ interface AnalysisPanelProps {
   isChatStreaming: boolean;
   onSendChat: (message: string) => void;
   onClearChat: () => void;
+  mobileCollapsed?: boolean;
+  onToggleMobileCollapse?: () => void;
 }
 
 function formatBytes(bytes: number): string {
@@ -38,6 +40,7 @@ function renderMarkdown(text: string): string {
 export default function AnalysisPanel({
   image, isAnalyzing, isComplete, streamedText, error,
   chatMessages, isChatStreaming, onSendChat, onClearChat,
+  mobileCollapsed = false, onToggleMobileCollapse,
 }: AnalysisPanelProps) {
   const hasOutput = streamedText || error;
   const showChat = isComplete && streamedText && !error;
@@ -67,9 +70,13 @@ export default function AnalysisPanel({
   };
 
   return (
-    <aside className="w-[420px] flex-shrink-0 bg-[#0c0c1a] border-l border-[#1e2040] flex flex-col">
+    <aside className={`w-full md:w-[320px] lg:w-[420px] flex-shrink-0 bg-[#0c0c1a] border-t md:border-t-0 md:border-l border-[#1e2040] flex flex-col overflow-hidden transition-[height] duration-300 ease-in-out
+      ${mobileCollapsed ? 'h-[49px]' : 'h-[42vh]'} md:h-auto`}>
       {/* Panel header */}
-      <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#1e2040] flex-shrink-0 bg-[#0c0c1a]">
+      <div
+        className="flex items-center justify-between px-4 sm:px-5 py-3.5 border-b border-[#1e2040] flex-shrink-0 bg-[#0c0c1a] md:cursor-default cursor-pointer"
+        onClick={() => onToggleMobileCollapse?.()}
+      >
         <div className="flex items-center gap-2.5">
           <div className={`w-2 h-2 rounded-full flex-shrink-0 transition-colors duration-500
             ${isAnalyzing
@@ -82,21 +89,31 @@ export default function AnalysisPanel({
           <span className="text-[13px] font-semibold text-[#e8eaf6]">AI Radiology Report</span>
         </div>
 
-        {isAnalyzing && (
-          <span className="text-[10px] font-mono px-2.5 py-1 rounded-md bg-[rgba(0,212,255,0.1)] border border-[rgba(0,212,255,0.3)] text-[#00d4ff] tracking-[1.5px]">
-            ANALYZING
-          </span>
-        )}
-        {isComplete && !isAnalyzing && !error && (
-          <span className="text-[10px] font-mono px-2.5 py-1 rounded-md bg-[rgba(0,255,136,0.08)] border border-[rgba(0,255,136,0.3)] text-[#00ff88] tracking-[1.5px]">
-            COMPLETE
-          </span>
-        )}
-        {error && (
-          <span className="text-[10px] font-mono px-2.5 py-1 rounded-md bg-[rgba(255,68,68,0.1)] border border-[rgba(255,68,68,0.3)] text-[#ff4444] tracking-[1.5px]">
-            ERROR
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {isAnalyzing && (
+            <span className="text-[10px] font-mono px-2.5 py-1 rounded-md bg-[rgba(0,212,255,0.1)] border border-[rgba(0,212,255,0.3)] text-[#00d4ff] tracking-[1.5px]">
+              ANALYZING
+            </span>
+          )}
+          {isComplete && !isAnalyzing && !error && (
+            <span className="text-[10px] font-mono px-2.5 py-1 rounded-md bg-[rgba(0,255,136,0.08)] border border-[rgba(0,255,136,0.3)] text-[#00ff88] tracking-[1.5px]">
+              COMPLETE
+            </span>
+          )}
+          {error && (
+            <span className="text-[10px] font-mono px-2.5 py-1 rounded-md bg-[rgba(255,68,68,0.1)] border border-[rgba(255,68,68,0.3)] text-[#ff4444] tracking-[1.5px]">
+              ERROR
+            </span>
+          )}
+          {/* Mobile collapse toggle */}
+          <button
+            className="md:hidden flex items-center justify-center w-6 h-6 rounded text-[#4a5568] hover:text-[#8892b0]"
+            onClick={e => { e.stopPropagation(); onToggleMobileCollapse?.(); }}
+            aria-label={mobileCollapsed ? 'Expand panel' : 'Collapse panel'}
+          >
+            {mobileCollapsed ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
+        </div>
       </div>
 
       {/* Scrollable content */}
