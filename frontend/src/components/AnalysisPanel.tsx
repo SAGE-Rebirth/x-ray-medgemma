@@ -147,7 +147,7 @@ export default function AnalysisPanel({
               <div className="w-1.5 h-1.5 rounded-full bg-[#00d4ff] bounce-dot" />
             </div>
             <span className="text-[11px] font-mono text-[#00d4ff] tracking-[1.5px]">
-              DR. MEDGEMMA IS ANALYZING...
+              DR. NEXRAY IS ANALYZING...
             </span>
           </div>
         )}
@@ -211,7 +211,7 @@ export default function AnalysisPanel({
                   <div className="max-w-[95%]">
                     <div className="flex items-center gap-1.5 mb-1.5">
                       <div className="w-1.5 h-1.5 rounded-full bg-[#00ff88]" />
-                      <span className="text-[10px] font-mono text-[#4a5568] uppercase tracking-[1px]">Dr. MedGemma</span>
+                      <span className="text-[10px] font-mono text-[#4a5568] uppercase tracking-[1px]">Dr. NexRay</span>
                     </div>
                     <div
                       className={`chat-response px-3.5 py-2.5 rounded-xl rounded-tl-sm bg-[#141428] border border-[#1e2040] text-[12px] text-[#c8cce0] leading-relaxed${

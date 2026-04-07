@@ -17,7 +17,7 @@ export default function Header({ imageLoaded, filename }: HeaderProps) {
       .then(r => r.json())
       .then(d => {
         setApiStatus(d.status === 'healthy' ? 'online' : 'offline');
-        setProviderInfo(d.provider ? `${d.provider.toUpperCase()} — ${d.model || ''}` : '');
+        setProviderInfo(d.provider === 'gemini' ? '' : (d.provider ? `${d.provider.toUpperCase()} — ${d.model || ''}` : ''));
       })
       .catch(() => setApiStatus('offline'));
   }, []);
@@ -41,7 +41,7 @@ export default function Header({ imageLoaded, filename }: HeaderProps) {
         </div>
         <div>
           <div className="text-[18px] font-bold bg-gradient-to-r from-[#00d4ff] to-[#7744ff] bg-clip-text text-transparent tracking-tight leading-none mb-0.5">
-            MedGemma
+            NexRay
           </div>
           <div className="text-[9px] text-[#4a5568] tracking-[2.5px] uppercase font-mono">
             AI Radiology Platform
@@ -64,7 +64,7 @@ export default function Header({ imageLoaded, filename }: HeaderProps) {
           {apiStatus === 'checking'
             ? 'CONNECTING...'
             : apiStatus === 'online'
-            ? (providerInfo || 'MEDGEMMA READY')
+            ? (providerInfo || 'NEXRAY READY')
             : 'MODEL SETUP NEEDED'}
         </span>
       </div>

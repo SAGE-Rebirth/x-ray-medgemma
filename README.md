@@ -1,6 +1,6 @@
 <div align="center">
 
-# MedGemma
+# NexRay
 
 <p><b>AI-Powered Medical Image Analysis Platform</b></p>
 
@@ -47,7 +47,7 @@
 | Layer | Technologies |
 |-------|-------------|
 | **Backend** | Python 3.10+, Flask 3, Flask-CORS, Pillow, python-dotenv |
-| **AI / ML** | Ollama (MedGemma 4B), Google Gemini 2.0 Flash, Transformers, PyTorch |
+| **AI / ML** | Ollama (NexRay 4B), Google Gemini 2.0 Flash, Transformers, PyTorch |
 | **Frontend** | React 18, TypeScript, Vite, Tailwind CSS, Lucide Icons |
 | **Streaming** | Server-Sent Events (SSE) |
 
@@ -59,7 +59,7 @@
 
 - **Python** 3.10 or newer
 - **Node.js** 18 or newer
-- **Ollama** with the `amsaravi/medgemma-4b-it:q6` model pulled, **or** a **Google Gemini API key** ([free tier available](https://aistudio.google.com))
+- **Ollama** with the `amsaravi/nexray-4b-it:q6` model pulled, **or** a **Google Gemini API key** ([free tier available](https://aistudio.google.com))
 
 ---
 
@@ -183,7 +183,7 @@ Medgemma/
 | `GEMINI_API_KEY` | Google Gemini API key (optional if using Ollama) |
 | `HF_TOKEN` | HuggingFace token for model access |
 | `OLLAMA_BASE_URL` | Ollama server URL (default: `http://localhost:11434`) |
-| `OLLAMA_MODEL` | Model to use (default: `amsaravi/medgemma-4b-it:q6`) |
+| `OLLAMA_MODEL` | Model to use (default: `amsaravi/nexray-4b-it:q6`) |
 
 ---
 
