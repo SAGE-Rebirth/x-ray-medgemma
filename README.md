@@ -7,13 +7,14 @@
 <p>
   <img src="https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white" />
   <img src="https://img.shields.io/badge/Flask-3.0-000000?style=for-the-badge&logo=flask&logoColor=white" />
+  <img src="https://img.shields.io/badge/Gemini_3.1-Flash_Lite-4285F4?style=for-the-badge&logo=google&logoColor=white" />
   <img src="https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black" />
   <img src="https://img.shields.io/badge/TypeScript-5.6-3178C6?style=for-the-badge&logo=typescript&logoColor=white" />
   <img src="https://img.shields.io/badge/Vite-5.4-646CFF?style=for-the-badge&logo=vite&logoColor=white" />
   <img src="https://img.shields.io/badge/Tailwind_CSS-3.4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white" />
 </p>
 
-<p>A full-stack medical imaging platform that combines <b>real-time AI analysis</b> with a professional <b>dark DICOM-viewer interface</b>. Upload X-rays and medical images, run specialized diagnostic tools, and receive structured radiological reports streamed in real time.</p>
+<p>A full-stack medical imaging platform that combines <b>real-time AI analysis</b> with a professional <b>dark DICOM-viewer interface</b>. Upload X-rays and medical images, run specialized diagnostic tools, receive structured radiological reports streamed in real time, and <b>chat with Dr. MedGemma</b> to ask follow-up questions about your results.</p>
 
 </div>
 
@@ -34,6 +35,8 @@
 
 <p><b>Real-Time SSE Streaming</b> — analysis results stream token-by-token into a structured report with 7 standardized sections: Technical Quality, Systematic Findings, Abnormal Findings, Clinical Impression, Differential Diagnoses, Recommendations, and Urgency Level.</p>
 
+<p><b>Interactive Report Chat</b> — after an analysis completes, chat with <b>Dr. MedGemma</b>, a virtual board-certified radiologist. Ask follow-up questions about findings, request explanations of medical terminology, or discuss clinical significance — all with full context of the original image and report. Multi-turn conversations are streamed in real time.</p>
+
 <p><b>Interactive Image Controls</b> — brightness (0–300%), contrast (0–500%), zoom (25–400%), and invert/negative toggle for detailed examination.</p>
 
 <p><b>Auto & Manual Annotations</b> — AI-detected pathology regions are highlighted with color-coded bounding boxes. Draw your own annotations with custom labels for anatomy (cyan), pathology (red), and devices (orange).</p>
@@ -47,7 +50,7 @@
 | Layer | Technologies |
 |-------|-------------|
 | **Backend** | Python 3.10+, Flask 3, Flask-CORS, Pillow, python-dotenv |
-| **AI / ML** | Ollama (MedGemma 4B), Google Gemini 2.0 Flash, Transformers, PyTorch |
+| **AI / ML** | Ollama (MedGemma 4B), Google Gemini 3.1 Flash Lite Preview, Transformers, PyTorch |
 | **Frontend** | React 18, TypeScript, Vite, Tailwind CSS, Lucide Icons |
 | **Streaming** | Server-Sent Events (SSE) |
 
@@ -124,6 +127,8 @@ npm run dev
 
 <p><b>Step 5 — Review Report:</b> Watch the structured radiological report stream in real time in the right panel.</p>
 
+<p><b>Step 6 — Chat:</b> Once the report is complete, use the chat window to ask Dr. MedGemma follow-up questions about findings, terminology, or clinical significance.</p>
+
 ---
 
 <h2>API Endpoints</h2>
@@ -135,6 +140,7 @@ npm run dev
 | `POST` | `/api/analyze` | Full comprehensive SSE streaming analysis |
 | `POST` | `/api/analyze/tool` | Focused tool-specific SSE streaming analysis |
 | `POST` | `/api/analyze/annotate` | Auto-detect pathology regions as JSON boxes |
+| `POST` | `/api/chat` | Multi-turn chat with report context (SSE streaming) |
 
 ---
 
@@ -163,7 +169,8 @@ Medgemma/
 │   │   ├── hooks/
 │   │   │   ├── useAnalysis.ts            # SSE streaming hook
 │   │   │   ├── useAnnotations.ts         # Auto-detected pathology boxes
-│   │   │   └── useManualAnnotations.ts   # User-drawn annotations
+│   │   │   ├── useManualAnnotations.ts   # User-drawn annotations
+│   │   │   └── useChat.ts               # Multi-turn chat with report
 │   │   └── types/
 │   │       └── index.ts                  # TypeScript interfaces
 │   ├── index.html
@@ -181,6 +188,7 @@ Medgemma/
 | Variable | Description |
 |----------|-------------|
 | `GEMINI_API_KEY` | Google Gemini API key (optional if using Ollama) |
+| `GEMINI_MODEL` | Gemini model to use (default: `gemini-3.1-flash-lite-preview`) |
 | `HF_TOKEN` | HuggingFace token for model access |
 | `OLLAMA_BASE_URL` | Ollama server URL (default: `http://localhost:11434`) |
 | `OLLAMA_MODEL` | Model to use (default: `amsaravi/medgemma-4b-it:q6`) |
