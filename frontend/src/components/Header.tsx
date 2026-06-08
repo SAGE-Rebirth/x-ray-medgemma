@@ -17,7 +17,7 @@ export default function Header({ imageLoaded, filename }: HeaderProps) {
       .then(r => r.json())
       .then(d => {
         setApiStatus(d.status === 'healthy' ? 'online' : 'offline');
-        setProviderInfo(d.provider ? `${d.provider.toUpperCase()} — ${d.model || ''}` : '');
+        setProviderInfo(d.provider ? 'COSSTECH MED AI' : '');
       })
       .catch(() => setApiStatus('offline'));
   }, []);
